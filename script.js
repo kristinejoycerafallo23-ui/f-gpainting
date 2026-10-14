@@ -1,8 +1,6 @@
 // F&G Decorating Ltd — shared front-end behaviour
-// Note: this is a static front-end demo. The quote form below simulates a
-// submission in the browser. A real build should wire this to a backend
-// (e.g. a form handler or CMS plugin) that emails the enquiry + photos to
-// F&G Decorating and stores it securely per UK GDPR.
+// Note: the quote and popup forms open a pre-filled email to F&G Decorating.
+// To receive submissions (and photos) directly, connect a form service.
 
 document.addEventListener("DOMContentLoaded", function () {
   // Mobile nav toggle
@@ -172,15 +170,36 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Quote form submit (client-side simulation)
+  // Quote form submit: opens a pre-filled email to F&G Decorating
   var quoteForm = document.getElementById("quote-form");
   var confirmBox = document.getElementById("confirmation");
-  var refCode = document.getElementById("ref-code");
   if (quoteForm && confirmBox) {
     quoteForm.addEventListener("submit", function (e) {
       e.preventDefault();
-      var ref = "FG-" + Math.floor(1000 + Math.random() * 9000);
-      if (refCode) refCode.textContent = ref;
+      var lines = [];
+      quoteForm.querySelectorAll(".field").forEach(function (field) {
+        var label = field.querySelector("label");
+        var inputs = field.querySelectorAll("input, textarea, select");
+        if (!label || !inputs.length) return;
+        var vals = [];
+        inputs.forEach(function (inp) {
+          if (inp.type === "file") return;
+          if ((inp.type === "checkbox" || inp.type === "radio") && !inp.checked) return;
+          if (inp.value) vals.push(inp.value);
+        });
+        if (vals.length) lines.push(label.textContent.replace("*", "").trim() + ": " + vals.join(", "));
+      });
+      quoteForm.querySelectorAll("fieldset").forEach(function (fs) {
+        var legend = fs.querySelector("legend");
+        var checked = [];
+        fs.querySelectorAll("input:checked").forEach(function (i) {
+          checked.push(i.value && i.value !== "on" ? i.value : (i.parentElement.textContent || "").trim());
+        });
+        if (legend && checked.length) lines.push(legend.textContent.trim() + ": " + checked.join(", "));
+      });
+      window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=" +
+        encodeURIComponent("Free quote request from website") +
+        "&body=" + encodeURIComponent(lines.join("\n"));
       quoteForm.style.display = "none";
       confirmBox.classList.add("show");
       confirmBox.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -222,31 +241,16 @@ document.addEventListener("DOMContentLoaded", function () {
     popupForm.addEventListener("submit", function (e) {
       e.preventDefault();
       var formData = new FormData(popupForm);
-      var submitBtn = popupForm.querySelector("button[type=submit]");
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Sending…"; }
-
-      fetch(popupForm.action, {
-        method: "POST",
-        body: formData,
-        headers: { "Accept": "application/json" }
-      }).then(function (response) {
-        if (response.ok) {
-          popupFormWrap.style.display = "none";
-          popupSuccess.classList.add("show");
-          try { sessionStorage.setItem("fgPopupSeen", "1"); } catch (err) {}
-        } else {
-          throw new Error("Form endpoint not configured");
-        }
-      }).catch(function () {
-        // Fallback if the email service isn't set up yet: open a pre-filled
-        // email to F&G Decorating instead, so the enquiry is never lost.
-        var name = encodeURIComponent(formData.get("name") || "");
-        var contact = encodeURIComponent(formData.get("contact") || "");
-        var message = encodeURIComponent(formData.get("message") || "");
-        var body = "Name: " + name + "%0APhone/Email: " + contact + "%0AMessage: " + message;
-        window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=New%20enquiry%20from%20website%20popup&body=" + body;
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = "Send & Get My Quote"; }
-      });
+      var name = formData.get("name") || "";
+      var contact = formData.get("contact") || "";
+      var message = formData.get("message") || "";
+      var body = "Name: " + name + "\nPhone/Email: " + contact + "\nMessage: " + message;
+      window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=" +
+        encodeURIComponent("New enquiry from website popup") +
+        "&body=" + encodeURIComponent(body);
+      if (popupFormWrap) popupFormWrap.style.display = "none";
+      if (popupSuccess) popupSuccess.classList.add("show");
+      try { sessionStorage.setItem("fgPopupSeen", "1"); } catch (err) {}
     });
   }
 });
