@@ -1157,25 +1157,39 @@ p { margin: 0 0 1em; color: var(--ink-soft); max-width: 62ch; }
 @media (max-width: 760px) { .tiktok-grid { grid-template-columns: repeat(2, 1fr); } }
 .tiktok-tile {
   aspect-ratio: 9/16;
-  background: var(--navy-deep);
+  background: linear-gradient(160deg, var(--navy-deep), var(--navy));
   border-radius: var(--radius-md);
   border: 1px solid rgba(255,255,255,0.12);
   display: flex;
-  align-items: stretch;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  padding: 0;
+  gap: 14px;
+  padding: 12px;
   color: var(--cream);
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   font-weight: 600;
   overflow: hidden;
+  text-align: center;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
-.tiktok-tile .tiktok-embed {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  margin: 0 !important;
-  height: 100%;
+.tiktok-tile:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold-light);
 }
+.tiktok-play {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold-light);
+  flex-shrink: 0;
+}
+.tiktok-tile-label { padding: 0 6px; }
 
 /* ---------- Footer ---------- */
 .site-footer {
