@@ -1156,8 +1156,11 @@ p { margin: 0 0 1em; color: var(--ink-soft); max-width: 62ch; }
 }
 @media (max-width: 760px) { .tiktok-grid { grid-template-columns: repeat(2, 1fr); } }
 .tiktok-tile {
+  position: relative;
   aspect-ratio: 9/16;
-  background: linear-gradient(160deg, var(--navy-deep), var(--navy));
+  background-color: var(--navy-deep);
+  background-size: cover;
+  background-position: center;
   border-radius: var(--radius-md);
   border: 1px solid rgba(255,255,255,0.12);
   display: flex;
@@ -1166,13 +1169,21 @@ p { margin: 0 0 1em; color: var(--ink-soft); max-width: 62ch; }
   justify-content: center;
   gap: 14px;
   padding: 12px;
-  color: var(--cream);
+  color: var(--white);
   font-size: 0.78rem;
   font-weight: 600;
   overflow: hidden;
   text-align: center;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
+.tiktok-tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10,22,38,0.15) 0%, rgba(10,22,38,0.2) 45%, rgba(10,22,38,0.85) 100%);
+  z-index: 0;
+}
+.tiktok-tile > * { position: relative; z-index: 1; }
 .tiktok-tile:hover {
   transform: translateY(-3px);
   border-color: var(--gold-light);
@@ -1181,15 +1192,19 @@ p { margin: 0 0 1em; color: var(--ink-soft); max-width: 62ch; }
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(2px);
+  border: 1px solid rgba(255,255,255,0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--gold-light);
+  color: var(--white);
   flex-shrink: 0;
 }
-.tiktok-tile-label { padding: 0 6px; }
+.tiktok-tile-label {
+  padding: 0 6px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+}
 
 /* ---------- Footer ---------- */
 .site-footer {
