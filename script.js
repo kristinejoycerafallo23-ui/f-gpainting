@@ -197,12 +197,62 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         if (legend && checked.length) lines.push(legend.textContent.trim() + ": " + checked.join(", "));
       });
-      window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=" +
-        encodeURIComponent("Free quote request from website") +
-        "&body=" + encodeURIComponent(lines.join("\n"));
-      quoteForm.style.display = "none";
-      confirmBox.classList.add("show");
-      confirmBox.scrollIntoView({ behavior: "smooth", block: "start" });
+      var submitBtn = quoteForm.querySelector("button[type=submit]");
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Sending..."; }
+
+      function done() {
+        quoteForm.style.display = "none";
+        confirmBox.classList.add("show");
+        confirmBox.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      function fallback() {
+        window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=" +
+          encodeURIComponent("Free quote request from website") +
+          "&body=" + encodeURIComponent(lines.join("\n") +
+          "\n\n(Please attach your photos to this email, or send them via WhatsApp 07351 052123.)");
+        done();
+      }
+
+      // Shrink phone photos so the whole request stays small enough to email
+      function shrink(file) {
+        return new Promise(function (resolve) {
+          if (!file.type || file.type.indexOf("image/") !== 0 || file.type === "image/gif") return resolve(file);
+          var img = new Image();
+          var url = URL.createObjectURL(file);
+          img.onload = function () {
+            var max = 1400, w = img.width, h = img.height, r = Math.min(1, max / Math.max(w, h));
+            var c = document.createElement("canvas");
+            c.width = Math.round(w * r); c.height = Math.round(h * r);
+            c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+            URL.revokeObjectURL(url);
+            c.toBlob(function (b) {
+              resolve(b ? new File([b], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }) : file);
+            }, "image/jpeg", 0.75);
+          };
+          img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+          img.src = url;
+        });
+      }
+
+      var photos = Array.from((document.getElementById("photo-input") || {}).files || []).slice(0, 10);
+      Promise.all(photos.map(shrink)).then(function (files) {
+        var fd = new FormData();
+        fd.append("_subject", "Free quote request from website");
+        fd.append("_template", "table");
+        fd.append("_captcha", "false");
+        lines.forEach(function (l) {
+          var i = l.indexOf(": ");
+          fd.append(i > -1 ? l.slice(0, i) : l, i > -1 ? l.slice(i + 2) : "");
+        });
+        files.forEach(function (f, i) { fd.append("attachment", f, f.name || ("photo-" + (i + 1) + ".jpg")); });
+        return fetch("https://formsubmit.co/ajax/fgdecoratingltd@gmail.com", {
+          method: "POST", body: fd, headers: { Accept: "application/json" }
+        });
+      }).then(function (res) { return res.json(); })
+        .then(function (data) {
+          if (data && (data.success === true || data.success === "true")) done(); else fallback();
+        })
+        .catch(fallback);
     });
   }
 
