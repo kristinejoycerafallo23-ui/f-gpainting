@@ -236,23 +236,39 @@ document.addEventListener("DOMContentLoaded", function () {
 
       var photos = Array.from((document.getElementById("photo-input") || {}).files || []).slice(0, 10);
       Promise.all(photos.map(shrink)).then(function (files) {
-        var fd = new FormData();
-        fd.append("_subject", "Free quote request from website");
-        fd.append("_template", "table");
-        fd.append("_captcha", "false");
+        // Normal multipart form post (the only mode FormSubmit documents for attachments),
+        // sent into a hidden iframe so the visitor stays on the page.
+        var frameName = "fg-quote-frame";
+        var frame = document.createElement("iframe");
+        frame.name = frameName; frame.style.display = "none";
+        document.body.appendChild(frame);
+        var f = document.createElement("form");
+        f.method = "POST"; f.enctype = "multipart/form-data";
+        f.action = "https://formsubmit.co/fgdecoratingltd@gmail.com";
+        f.target = frameName; f.style.display = "none";
+        function add(n, v) {
+          var i = document.createElement("input");
+          i.type = "hidden"; i.name = n; i.value = v; f.appendChild(i);
+        }
+        add("_subject", "Free quote request from website");
+        add("_template", "table");
+        add("_captcha", "false");
         lines.forEach(function (l) {
           var i = l.indexOf(": ");
-          fd.append(i > -1 ? l.slice(0, i) : l, i > -1 ? l.slice(i + 2) : "");
+          add(i > -1 ? l.slice(0, i) : l, i > -1 ? l.slice(i + 2) : "");
         });
-        files.forEach(function (f, i) { fd.append("attachment", f, f.name || ("photo-" + (i + 1) + ".jpg")); });
-        return fetch("https://formsubmit.co/ajax/fgdecoratingltd@gmail.com", {
-          method: "POST", body: fd, headers: { Accept: "application/json" }
+        files.forEach(function (file, idx) {
+          var inp = document.createElement("input");
+          inp.type = "file"; inp.name = "photo" + (idx + 1);
+          var dt = new DataTransfer(); dt.items.add(file); inp.files = dt.files;
+          f.appendChild(inp);
         });
-      }).then(function (res) { return res.json(); })
-        .then(function (data) {
-          if (data && (data.success === true || data.success === "true")) done(); else fallback();
-        })
-        .catch(fallback);
+        document.body.appendChild(f);
+        var finished = false;
+        frame.addEventListener("load", function () { if (!finished) { finished = true; done(); } });
+        setTimeout(function () { if (!finished) { finished = true; fallback(); } }, 25000);
+        f.submit();
+      }).catch(fallback);
     });
   }
 
