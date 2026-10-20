@@ -265,8 +265,10 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         document.body.appendChild(f);
         var finished = false;
-        frame.addEventListener("load", function () { if (!finished) { finished = true; done(); } });
-        setTimeout(function () { if (!finished) { finished = true; fallback(); } }, 25000);
+        function finish() { if (!finished) { finished = true; done(); } }
+        frame.addEventListener("load", finish);
+        // The reply from FormSubmit can't be read cross-site, so don't wait on it for long
+        setTimeout(finish, 4000);
         f.submit();
       }).catch(fallback);
     });
