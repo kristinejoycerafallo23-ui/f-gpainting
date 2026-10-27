@@ -357,3 +357,22 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+
+/* Cookie consent banner */
+(function(){
+  var stored=null; try{stored=localStorage.getItem('fgConsent');}catch(e){}
+  if(stored) return;
+  function set(v){
+    try{localStorage.setItem('fgConsent',v);}catch(e){}
+    gtag('consent','update',{ad_storage:v,analytics_storage:v,ad_user_data:v,ad_personalization:v});
+    window.dataLayer.push({event:'consent_'+v});
+    var b=document.getElementById('fg-cookie'); if(b) b.remove();
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    var b=document.createElement('div'); b.id='fg-cookie'; b.setAttribute('role','dialog'); b.setAttribute('aria-label','Cookie consent');
+    b.innerHTML='<p>We use cookies to understand how our site is used and to measure our adverts. You can accept or reject non-essential cookies. <a href="cookies.html">Cookie policy</a></p><div><button type="button" id="fg-reject">Reject</button><button type="button" id="fg-accept">Accept</button></div>';
+    document.body.appendChild(b);
+    document.getElementById('fg-accept').onclick=function(){set('granted');};
+    document.getElementById('fg-reject').onclick=function(){set('denied');};
+  });
+})();
