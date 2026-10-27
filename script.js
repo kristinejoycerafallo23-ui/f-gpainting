@@ -2,6 +2,37 @@
 // Note: the quote and popup forms open a pre-filled email to F&G Decorating.
 // To receive submissions (and photos) directly, connect a form service.
 
+// ---- Analytics events (Google Tag Manager dataLayer) ----
+window.dataLayer = window.dataLayer || [];
+function fgTrack(name, extra) {
+  var e = { event: name };
+  for (var k in (extra || {})) e[k] = extra[k];
+  window.dataLayer.push(e);
+}
+// Remember UTM campaign tags from the visitor's first landing so they can be sent with the quote request
+var fgUtm = {};
+try {
+  var qs = new URLSearchParams(window.location.search);
+  ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"].forEach(function (k) {
+    if (qs.get(k)) fgUtm[k] = qs.get(k);
+  });
+  if (Object.keys(fgUtm).length) localStorage.setItem("fgUtm", JSON.stringify(fgUtm));
+  else fgUtm = JSON.parse(localStorage.getItem("fgUtm") || "{}");
+} catch (err) {}
+if (Object.keys(fgUtm).length) fgTrack("utm_captured", fgUtm);
+// Phone, WhatsApp, email and "quote" button clicks
+document.addEventListener("click", function (e) {
+  var a = e.target.closest ? e.target.closest("a") : null;
+  if (!a) return;
+  var href = a.getAttribute("href") || "";
+  var label = (a.textContent || "").replace(/\s+/g, " ").trim().slice(0, 60);
+  var page = window.location.pathname;
+  if (href.indexOf("tel:") === 0) fgTrack("phone_click", { link_text: label, page_path: page });
+  else if (href.indexOf("wa.me") > -1) fgTrack("whatsapp_click", { link_text: label, page_path: page });
+  else if (href.indexOf("mailto:") === 0) fgTrack("email_click", { link_text: label, page_path: page });
+  if (href.indexOf("quote") > -1 && (a.className || "").indexOf("btn") > -1) fgTrack("cta_click", { link_text: label, page_path: page });
+});
+
 document.addEventListener("DOMContentLoaded", function () {
   // Mobile nav toggle
   var toggle = document.querySelector(".nav-toggle");
@@ -200,7 +231,10 @@ document.addEventListener("DOMContentLoaded", function () {
       var submitBtn = quoteForm.querySelector("button[type=submit]");
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = "Sending..."; }
 
+      Object.keys(fgUtm).forEach(function (k) { lines.push(k + ": " + fgUtm[k]); });
+
       function done() {
+        fgTrack("quote_form_submit", { page_path: window.location.pathname, photos_attached: photos.length });
         quoteForm.style.display = "none";
         confirmBox.classList.add("show");
         confirmBox.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -316,6 +350,7 @@ document.addEventListener("DOMContentLoaded", function () {
       window.location.href = "mailto:fgdecoratingltd@gmail.com?subject=" +
         encodeURIComponent("New enquiry from website popup") +
         "&body=" + encodeURIComponent(body);
+      fgTrack("popup_form_submit", { page_path: window.location.pathname });
       if (popupFormWrap) popupFormWrap.style.display = "none";
       if (popupSuccess) popupSuccess.classList.add("show");
       try { sessionStorage.setItem("fgPopupSeen", "1"); } catch (err) {}
